@@ -90,15 +90,21 @@ const broadCast = (message) => {
 
 wsServer.on('connection', (connection, request) => {
     const {username, detachment, army} = url.parse(request.url, true).query
-    if (!username || !detachment || !army){
+    if (!username){
         console.log("User tried to connect without some data")
         const response = JSON.stringify({ error : "Not enough data" })
         connection.send(response)
         connection.close()
     }
-    else if(!detachments.includes(detachment)){
-        console.log(`User chose wrong detachment: ${detachment}`)
-        const response = JSON.stringify({ error : "Detachment off the list" })
+    else if(!detachment || !detachments.includes(detachment)){
+        console.log(`User chose wrong or no detachment: ${detachment}`)
+        const response = JSON.stringify({ error : "Detachment error" })
+        connection.send(response)
+        connection.close()
+    }
+    else if(!army){
+        console.log(`User chose wrong or no army: ${detachment}`)
+        const response = JSON.stringify({ error : "Army error" })
         connection.send(response)
         connection.close()
     }
