@@ -1,6 +1,7 @@
 import { WebSocketServer } from 'ws';
 import generateUniqueId from 'generate-unique-id';
 import url from 'url'
+import getPrimaryMission from './utils/getPrimary';
 
 const wsServer = new WebSocketServer({ port: 8080 });
 const detachments = ['take_and_hold', 'disruption', 'purge_the_foe', 'priority_assets', 'reconnaissance']
@@ -19,17 +20,21 @@ const handleMessage = (uid, bytes) => {
     const type = message.type
     console.log(`Action from ${users[uid].username} Type : ${type}`)
     console.log(type)
+    let gameId
     switch (type) {
-        case "newGame":
-            const gameId = createNewGame(uid)
+        case "new_game":
+            gameId = createNewGame(uid)
             users[uid].currentGame = gameId
             console.log(`${users[uid].username} created game ${gameId}`)
             const response = JSON.stringify({
                 "status" : "success",
-                "gameId" : gameId
+                "gameId" : gameId,
             })
             break;
-
+        case "join_game":
+            gameId = message.game_id
+            joinGame(uid, gameId)
+            break;
         default:
             throw new Error("No such option")
             break;
@@ -51,15 +56,31 @@ const createNewGame = (uid) => {
         oldGame.players.filter(item => item !== uid)
 
     }
-    const newGameId = generateUniqueId()
+    const newGameId = generateUniqueId({length: 7})
     games[newGameId] = {
         owner : uid,
         players : [uid],
+        ready  : false,
+        ongoing : false
     }
     return newGameId
 }
 
 const joinGame = (uid, gameId) => {
+    const game = games[gameId]
+    if(game.players.length > 1){
+        throw new Error("This game is full")
+    }
+    game.players.push(uid)
+    const message = JSON.stringify({
+        "action" : "start_game",
+        "starts" : games[gameId].players[Math.floor(Math.random()*games[gameId].players.length)]
+    })
+    game.ready = true
+    broadCastToPlayers(gameId, message)
+}
+
+const start_game = (gameId) => {
 
 }
 
@@ -71,8 +92,10 @@ const finishGame = (uid) => {
 
 }
 
-const broadCastToPlayers = (gameId) => {
-
+const broadCastToPlayers = (gameId, message) => {
+    games[gameId].forEach(uid => 
+        connections[uid].send(message)
+    )
 }
 
 const handleDisconenction = (uid) => {
