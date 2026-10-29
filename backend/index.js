@@ -22,6 +22,10 @@ const handleMessage = (uid, bytes) => {
     switch (type) {
         case "newGame":
             const gameId = createNewGame(uid)
+            const response = JSON.stringify({
+                "status" : "success",
+                "gameId" : gameId
+            })
             break;
 
         default:
@@ -46,8 +50,10 @@ const createNewGame = (uid) => {
     }
     const newGameId = generateUniqueId()
     games[newGameId] = {
-        
+        owner : uid,
+        players : [uid],
     }
+    return newGameId
 }
 
 const joinGame = (uid, gameId) => {
@@ -80,8 +86,8 @@ const broadCast = (message) => {
 }
 
 wsServer.on('connection', (connection, request) => {
-    const {username} = url.parse(request.url, true).query
-    if (!username){
+    const {username, detachment, army} = url.parse(request.url, true).query
+    if (!username || !detachment || !army){
         console.log("User tried to connect without username")
         const response = JSON.stringify({ error : "Not enough data" })
         connection.send(response)
@@ -95,7 +101,9 @@ wsServer.on('connection', (connection, request) => {
         users[uid] = {
             username: username,
             id : uid,
-            currentGame : null
+            currentGame : null,
+            detachment : detachment,
+            army : army
         }
 
         connection.on("message", message => handleMessage(uid, message))
