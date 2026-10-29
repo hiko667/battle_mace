@@ -6,21 +6,46 @@ const wsServer = new WebSocketServer({ port: 8080 });
 
 console.log("◇─◇──◇──System Logs──◇──◇─◇")
 
-connections = {}
-users = {}
-games = {}
-userGames = {}
+const connections = {}
+const users = {}
+const games = {}
 
 
-const handleMessage = (uid, message) => {
+const handleMessage = (uid, bytes) => {
+    try{
+    const connection = connections[uid]
+    const message = JSON.parse(bytes.toString())
+    const type = message.type
+    console.log(message)
+    console.log(`Action from ${users[uid].username} Type : ${type}`)
+    console.log(type)
+    switch (type) {
+        case "newGame":
+            const uid = generateUniqueId()
+            console.log(`New game at id ${uid}`)
+            break;
 
+        default:
+
+            throw new Error("No such option")
+            break;
+    }
+    }
+    catch (error){
+        console.log(`User ${users[uid].username} caused error - ${error.toString()}`)
+        const response = JSON.stringify({ "error": error.toString() })
+        connections[uid].send(response)
+    }
 }
+
+
 
 const handleDisconenction = (uid) => {
     console.log(`User ${users[uid].username} has disconected`)
     delete connections[uid]
     delete users[uid]
 }
+
 
 const broadCast = (message) => {
     Object.keys(connections).forEach(uid =>
@@ -43,10 +68,10 @@ wsServer.on('connection', (connection, request) => {
 
         users[uid] = {
             username: username,
-            id : uid
+            id : uid,
+            currentGame : null
         }
 
-        sendAllDevices(uid)
         connection.on("message", message => handleMessage(uid, message))
         connection.on("close", () => handleDisconenction(uid))
     }
