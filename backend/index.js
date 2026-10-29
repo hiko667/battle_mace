@@ -3,6 +3,7 @@ import generateUniqueId from 'generate-unique-id';
 import url from 'url'
 
 const wsServer = new WebSocketServer({ port: 8080 });
+const detachments = ['take_and_hold', 'disruption', 'purge_the_foe', 'priority_assets', 'reconnaissance']
 
 console.log("◇─◇──◇──System Logs──◇──◇─◇")
 
@@ -16,12 +17,13 @@ const handleMessage = (uid, bytes) => {
     const connection = connections[uid]
     const message = JSON.parse(bytes.toString())
     const type = message.type
-    console.log(message)
     console.log(`Action from ${users[uid].username} Type : ${type}`)
     console.log(type)
     switch (type) {
         case "newGame":
             const gameId = createNewGame(uid)
+            users[uid].currentGame = gameId
+            console.log(`${users[uid].username} created game ${gameId}`)
             const response = JSON.stringify({
                 "status" : "success",
                 "gameId" : gameId
@@ -29,7 +31,6 @@ const handleMessage = (uid, bytes) => {
             break;
 
         default:
-
             throw new Error("No such option")
             break;
     }
@@ -46,7 +47,9 @@ const createNewGame = (uid) => {
     if(host.currentGame !== null){
         const oldGameId = host.currentGame
         const oldGame = games[oldGameId]
+        console.log(`Removing ${users[uid].username} from game ${oldGameId}`)
         oldGame.players.filter(item => item !== uid)
+
     }
     const newGameId = generateUniqueId()
     games[newGameId] = {
@@ -88,8 +91,14 @@ const broadCast = (message) => {
 wsServer.on('connection', (connection, request) => {
     const {username, detachment, army} = url.parse(request.url, true).query
     if (!username || !detachment || !army){
-        console.log("User tried to connect without username")
+        console.log("User tried to connect without some data")
         const response = JSON.stringify({ error : "Not enough data" })
+        connection.send(response)
+        connection.close()
+    }
+    else if(!detachments.includes(detachment)){
+        console.log(`User chose wrong detachment: ${detachment}`)
+        const response = JSON.stringify({ error : "Detachment off the list" })
         connection.send(response)
         connection.close()
     }
