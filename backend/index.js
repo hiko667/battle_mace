@@ -21,8 +21,7 @@ const handleMessage = (uid, bytes) => {
     console.log(type)
     switch (type) {
         case "newGame":
-            const uid = generateUniqueId()
-            console.log(`New game at id ${uid}`)
+            const gameId = createNewGame(uid)
             break;
 
         default:
@@ -38,7 +37,34 @@ const handleMessage = (uid, bytes) => {
     }
 }
 
+const createNewGame = (uid) => {
+    const host = users[uid]
+    if(host.currentGame !== null){
+        const oldGameId = host.currentGame
+        const oldGame = games[oldGameId]
+        oldGame.players.filter(item => item !== uid)
+    }
+    const newGameId = generateUniqueId()
+    games[newGameId] = {
+        
+    }
+}
 
+const joinGame = (uid, gameId) => {
+
+}
+
+const nextRound = (gameId) => {
+
+}
+
+const finishGame = (uid) => {
+
+}
+
+const broadCastToPlayers = (gameId) => {
+
+}
 
 const handleDisconenction = (uid) => {
     console.log(`User ${users[uid].username} has disconected`)
